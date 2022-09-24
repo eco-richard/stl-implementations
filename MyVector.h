@@ -107,7 +107,7 @@ public:
     capacity_ = n;
   }
 
-  MyVector(std::size_t n, T value) { // Copies of specified element
+  MyVector(std::size_t n, ValueType value) { // Copies of specified element
     size_ = n;
     capacity_ = n;
     for (std::size_t i {0}; i < n; i++) {
@@ -193,12 +193,13 @@ public:
     size_ = 0;
   };
 
-  Iterator insert(Iterator pos, T val) {
+  Iterator insert(Iterator pos, const ValueType& val) {
     size_++;
+    if (capacity_ == 0) { capacity_ = 1; }
     if (size_ > capacity_) {
       ReAlloc(capacity_ * 2); 
     }
-    for (auto it {this->rbegin()}; it != rend(); it++) {
+    for (auto it {this->rbegin()}; it != this->rend(); it--) {
         if (it != pos) {
           *it = *(it - 1);
         } else {
@@ -209,7 +210,27 @@ public:
     return this->end();
   };
 
-  Iterator emplace(Iterator pos, T &&val);
+  Iterator insert(Iterator pos, ValueType&& val) {
+    size_++;
+    if (capacity_ == 0) { capacity_ = 1; }
+    if (size_ > capacity_) {
+      ReAlloc(capacity_ * 2); 
+    }
+    for (auto it {this->rbegin()}; it != rend(); it++) {
+        if (it != pos) {
+          *it = *(it - 1);
+        } else {
+          *it = std::move(val);
+          return it;
+        }
+    }
+    return this->end();
+  };
+
+  template <typename ...Args>
+  Iterator emplace(Iterator pos, Args&& ...args) {
+    return insert(pos, ValueType(std::forward<Args>(args)...));
+  }
 
   Iterator erase(Iterator pos) {
       for (auto it = pos; it != this->end()-1; it++) {
@@ -238,7 +259,7 @@ public:
     return first;
   }
 
-  void push_back(T element) {
+  void push_back(const ValueType &element) {
     size_++;
     if (capacity_ == 0) { capacity_++; }
     if (size_ > capacity_) {
@@ -247,7 +268,19 @@ public:
     data_[size_-1] = element;
   };
 
-  void emplace_back(T &&element);
+  void push_back(ValueType&& element) {
+    size_++;
+    if (capacity_ == 0) {capacity_++;}
+    if (size_ > capacity_) {
+      ReAlloc(capacity_ * 2);
+    }
+    data_[size_-1] = std::move(element);
+  }
+
+  template <typename ...Args>
+  void emplace_back(Args... args) {
+    push_back(ValueType(std::forward<Args>(args)...));
+  };
 
   void pop_back() {
     size_--;
@@ -322,33 +355,5 @@ public:
     // tempBlock goes out of scope here and gets garbage collected
   }
 };
-
-template<typename T>
-typename MyVector<T>::Iterator MyVector<T>::emplace(Iterator pos, T &&val) {
-    size_++;
-    if (size_ > capacity_) {
-        capacity_ = size_;
-    }
-    std::size_t index {size_ - 1};
-    for (auto it = this->rbegin(); it != rend(); it--) {
-        if (it != pos) {
-            data_[index] = data_[index-1];
-            index--;
-        } else {
-            data_[index] = val;
-            return it;
-        }
-    }
-    return this->begin()-1;
-}
-
-template<typename T>
-void MyVector<T>::emplace_back(T &&element) {
-    size_++;
-    if (size_ > capacity_) {
-        capacity_ *= 2;
-    }
-    data_[size_ - 1] = std::move(element);
-}
 
 #endif
