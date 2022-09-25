@@ -70,11 +70,10 @@ class MyVectorIterator {
 
   MyVectorIterator operator-(int i) { return (ptr_ - i); }
 
- private:
   PointerType ptr_;
 };
 
-// Vector Iterator Definition
+// Reverse Vector Iterator Definition
 template<typename T>
 class MyVectorReverseIterator {
  public:
@@ -85,28 +84,28 @@ class MyVectorReverseIterator {
   MyVectorReverseIterator(PointerType p) : ptr_(p) {}
 
   MyVectorReverseIterator& operator++() {
-    ptr_++;
+    ptr_--;
     return *this;
   }
 
   MyVectorReverseIterator operator++(int) {
     MyVectorReverseIterator tmp = *this;
-    ptr_++;
+    ptr_--;
     return tmp;
   }
 
   MyVectorReverseIterator& operator--() {
-    ptr_--;
+    ptr_++;
     return *this;
   }
 
   MyVectorReverseIterator operator--(int) {
     MyVectorReverseIterator tmp = *this;
-    ptr_--;
+    ptr_++;
     return tmp;
   }
 
-  ReferenceType operator[](int index) const { return *(ptr_ + index); }
+  ReferenceType operator[](int index) const { return *(ptr_ - index); }
 
   PointerType operator->() const { return ptr_; }
 
@@ -128,11 +127,10 @@ class MyVectorReverseIterator {
     return !(*this == rhs);
   }
 
-  MyVectorReverseIterator operator+(int i) { return (ptr_ + i); }
+  MyVectorReverseIterator operator+(int i) { return (ptr_ - i); }
 
-  MyVectorReverseIterator operator-(int i) { return (ptr_ - i); }
+  MyVectorReverseIterator operator-(int i) { return (ptr_ + i); }
 
- private:
   PointerType ptr_;
 };
 
@@ -244,7 +242,7 @@ public:
 
   std::size_t capacity() const { return capacity_; };
 
-  bool empty() const {
+  bool empty() {
     return this->begin() == this->end();
   };
 
@@ -431,7 +429,7 @@ public:
     return &data_[i];
   }
 
-  friend std::ostream &operator<<(std::ostream &os, const MyVector<T> mv) {
+  friend std::ostream &operator<<(std::ostream &os, const MyVector<T> &mv) {
     std::string v_string = "[";
     for (int i {0}; i < mv.size(); i++) {
       if (i == mv.size()-1) {

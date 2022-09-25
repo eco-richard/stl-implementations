@@ -90,6 +90,50 @@ struct EmptyVectorTest : testing::Test {
   }
 };
 
+// Examples struct used for emplace and emplace_back tests
+struct Point {
+  int x_;
+  int y_;
+
+  Point()
+  : x_(0), y_(0) {}
+
+  Point(int x, int y)
+  : x_(x), y_(y) {}
+
+  Point(const Point &rhs) {
+    x_ = rhs.x_;
+    y_ = rhs.y_;
+  }
+
+  Point(Point &&rhs) {
+    x_ = std::move(rhs.x_);
+    y_ = std::move(rhs.y_);
+  }
+
+  Point& operator=(const Point &rhs) {
+    if (*this == rhs) {
+      return *this;
+    }
+    x_ = rhs.x_;
+    y_ = rhs.y_;
+    return *this;
+  }
+
+  Point& operator=(Point&& rhs) {
+    if (*this == rhs) {
+      return *this;
+    }
+    x_ = std::move(rhs.x_);
+    y_ = std::move(rhs.y_);
+    return *this;
+  }
+
+  bool operator==(const Point &rhs) const {
+    return (x_ == rhs.x_ && y_ == rhs.y_);
+  }
+};
+
 TEST_F(EmptyVectorTest, VectorSize) {
   EXPECT_EQ(0, empty_my_v->size());
 }
@@ -146,6 +190,62 @@ struct NonEmptyVectorTest : testing::Test {
   }
 };
 
+// Test fixture to test nonempty vectors for emplace and emplace_back
+struct NonEmptyVectorTestPoint : testing::Test {
+  unique_ptr<vector<Point>> nonempty_std_v;
+  unique_ptr<MyVector<Point>> nonempty_my_v;
+
+  NonEmptyVectorTestPoint() {
+    Point a (1, 2);
+    Point b (2, 3);
+    Point c (3, 4);
+    nonempty_std_v = make_unique<vector<Point>>(vector<Point>{a, b, c});
+    nonempty_my_v = make_unique<MyVector<Point>>(MyVector<Point>{a, b, c});
+  }
+
+  void VectorTest() {
+    ASSERT_EQ(nonempty_std_v->size(), nonempty_my_v->size());
+    EXPECT_EQ(nonempty_std_v->capacity(), nonempty_my_v->capacity());
+    if (nonempty_my_v->size() > 0) {
+      for (std::size_t i {0}; i < nonempty_my_v->size(); i++) {
+        EXPECT_EQ(nonempty_std_v->at(i), nonempty_my_v->at(i));
+      }
+    }
+  }
+
+  virtual ~NonEmptyVectorTestPoint() {
+    nonempty_std_v.reset(nullptr);
+    nonempty_my_v.reset(nullptr);
+  }
+};
+
+// Test fixture to test empty vectors for emplace and emplace back
+struct EmptyVectorTestPoint : testing::Test {
+  unique_ptr<vector<Point>> empty_std_v; // Empty Std::vector to run tests on
+  unique_ptr<MyVector<Point>> empty_my_v; // Empty my vector to do the same
+
+  EmptyVectorTestPoint() {
+    empty_std_v = make_unique<std::vector<Point>>();
+    empty_my_v = make_unique<MyVector<Point>>();
+  }
+
+  void VectorTest() {
+    ASSERT_EQ(empty_std_v->size(), empty_my_v->size());
+    EXPECT_EQ(empty_std_v->capacity(), empty_my_v->capacity());
+    if (empty_my_v->size() > 0) {
+      for (std::size_t i {0}; i < empty_my_v->size(); i++) {
+        EXPECT_EQ(empty_std_v->at(i), empty_my_v->at(i));
+      }
+    }
+  }
+  virtual ~EmptyVectorTestPoint() {
+    empty_std_v.reset(nullptr);
+    empty_my_v.reset(nullptr);
+  }
+};
+
+
+
 TEST_F(NonEmptyVectorTest, AtMethod) {
   VectorTest();
 };
@@ -174,6 +274,24 @@ TEST_F(NonEmptyVectorTest, ReserveMethodGreaterThanSize) {
 TEST_F(NonEmptyVectorTest, ShrinkToFitMethod) {
   nonempty_std_v->shrink_to_fit();
   nonempty_my_v->shrink_to_fit();
+  VectorTest();
+}
+
+TEST_F(NonEmptyVectorTest, ClearMethod) {
+  nonempty_std_v->clear();
+  nonempty_my_v->clear();
+  VectorTest();
+}
+
+TEST_F(NonEmptyVectorTest, InsertMethod) {
+  nonempty_std_v->insert(nonempty_std_v->begin()+1, 10);
+  nonempty_my_v->insert(nonempty_my_v->begin()+1, 10);
+  VectorTest();
+}
+
+TEST_F(NonEmptyVectorTest, EraseMethod) {
+  nonempty_std_v->erase(nonempty_std_v->begin()+2);
+  nonempty_my_v->erase(nonempty_my_v->begin()+2);
   VectorTest();
 }
 
@@ -208,4 +326,29 @@ TEST(VectorTest, AccessOperatorOutOfRange) {
   EXPECT_THAT(mv[3], An<int>());
   EXPECT_NO_THROW(stdv[3]);
   EXPECT_NO_THROW(mv[3]);
+}
+
+TEST_F(EmptyVectorTestPoint, EmplaceMethod) {
+  empty_std_v->emplace(empty_std_v->begin(), 10, 10);
+  empty_my_v->emplace(empty_my_v->begin(), 10, 10);
+  VectorTest();
+}
+
+TEST_F(EmptyVectorTestPoint, EmplaceBackMethod) {
+  empty_std_v->emplace_back(10, 10);
+  empty_my_v->emplace_back(10, 10);
+  VectorTest();
+}
+
+TEST_F(NonEmptyVectorTestPoint, EmplaceMethod) {
+  nonempty_std_v->emplace(nonempty_std_v->begin()+2, 10, 10);
+  nonempty_my_v->emplace(nonempty_my_v->begin()+2, 10, 10);
+  VectorTest();
+}
+
+TEST_F(NonEmptyVectorTestPoint, EmplaceBackMethod) {
+  nonempty_std_v->emplace_back(10, 10);
+  nonempty_my_v->emplace_back(10, 10);
+
+  VectorTest();
 }
