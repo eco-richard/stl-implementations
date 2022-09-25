@@ -4,8 +4,13 @@
 #include <cstddef>
 #include <exception>
 #include <initializer_list>
+#include <iterator>
 #include <memory>
 #include <stdexcept>
+#include <string>
+
+template <typename T>
+class MyVectorReverseIterator;
 
 // Vector Iterator Definition
 template<typename T>
@@ -39,17 +44,25 @@ class MyVectorIterator {
     return tmp;
   }
 
-  ReferenceType operator[](int index) { return *(ptr_ + index); }
+  ReferenceType operator[](int index) const { return *(ptr_ + index); }
 
-  PointerType operator->() { return ptr_; }
+  PointerType operator->() const { return ptr_; }
 
-  ReferenceType operator*() { return *ptr_; }
+  ReferenceType operator*() const { return *ptr_; }
 
   bool operator==(const MyVectorIterator &rhs) {
     return ptr_ == rhs.ptr_;
   }
 
+  bool operator==(const MyVectorReverseIterator<T> &rhs) {
+    return ptr_ == rhs.ptr_;
+  }
+
   bool operator!=(const MyVectorIterator &rhs) {
+    return !(*this == rhs);
+  }
+
+  bool operator!=(const MyVectorReverseIterator<T> &rhs) {
     return !(*this == rhs);
   }
 
@@ -61,6 +74,69 @@ class MyVectorIterator {
   PointerType ptr_;
 };
 
+// Vector Iterator Definition
+template<typename T>
+class MyVectorReverseIterator {
+ public:
+  using ValueType = typename T::ValueType;
+  using PointerType = typename T::PointerType;
+  using ReferenceType = typename T::ReferenceType;
+ public:
+  MyVectorReverseIterator(PointerType p) : ptr_(p) {}
+
+  MyVectorReverseIterator& operator++() {
+    ptr_++;
+    return *this;
+  }
+
+  MyVectorReverseIterator operator++(int) {
+    MyVectorReverseIterator tmp = *this;
+    ptr_++;
+    return tmp;
+  }
+
+  MyVectorReverseIterator& operator--() {
+    ptr_--;
+    return *this;
+  }
+
+  MyVectorReverseIterator operator--(int) {
+    MyVectorReverseIterator tmp = *this;
+    ptr_--;
+    return tmp;
+  }
+
+  ReferenceType operator[](int index) const { return *(ptr_ + index); }
+
+  PointerType operator->() const { return ptr_; }
+
+  ReferenceType operator*() const { return *ptr_; }
+
+  bool operator==(const MyVectorReverseIterator &rhs) {
+    return ptr_ == rhs.ptr_;
+  }
+
+  bool operator==(const MyVectorIterator<T> &rhs) {
+    return ptr_ == rhs.ptr_;
+  }
+
+  bool operator!=(const MyVectorReverseIterator &rhs) {
+    return !(*this == rhs);
+  }
+
+  bool operator!=(const MyVectorIterator<T> &rhs) {
+    return !(*this == rhs);
+  }
+
+  MyVectorReverseIterator operator+(int i) { return (ptr_ + i); }
+
+  MyVectorReverseIterator operator-(int i) { return (ptr_ - i); }
+
+ private:
+  PointerType ptr_;
+};
+
+
 template<typename T>
 class MyVector {
  public:
@@ -69,6 +145,8 @@ class MyVector {
   using ReferenceType = ValueType&;
   using Iterator = MyVectorIterator<MyVector<T>>;
   using ConstIterator = const MyVectorIterator<MyVector<T>>;
+  using ReverseIterator = MyVectorReverseIterator<MyVector<T>>;
+  using ConstReverseIterator = const MyVectorReverseIterator<MyVector<T>>;
 
 public:
   // Constructors:
@@ -122,16 +200,16 @@ public:
   }; 
 
   // Element Access Methods
-  ValueType at(std::size_t pos) { // Find element at index with bounds checking
+  ValueType at(std::size_t pos) const { // Find element at index with bounds checking
     if (pos > size_) {
       throw std::out_of_range("Larger than this->size()");
     }
     return data_[pos];
   };
-  PointerType front() { // Return pointer to the first element
+  PointerType front() const { // Return pointer to the first element
     return &data_[0];
   }
-  PointerType back() { // Return pointer to the last element
+  PointerType back() const { // Return pointer to the last element
     return &data_[size_-1];
   }
 
@@ -139,34 +217,34 @@ public:
   Iterator begin() {
     return Iterator(data_.get());
   }
-  ConstIterator cbegin() {
+  ConstIterator cbegin() const {
     return ConstIterator(data_.get());
   }
   Iterator end() {
     return Iterator(data_.get() + int(size_));
   };
-  ConstIterator cend() {
+  ConstIterator cend() const {
     return ConstIterator(data_.get() + int(size_));
   }
-  Iterator rbegin() {
-    return Iterator(data_.get() + int(size_) - 1);
+  ReverseIterator rbegin() {
+    return ReverseIterator(data_.get() + int(size_) - 1);
   };
-  Iterator crbegin() {
-    return ConstIterator(data_.get() + int(size_) - 1);
+  ConstReverseIterator crbegin() const {
+    return ConstReverseIterator(data_.get() + int(size_) - 1);
   };
-  Iterator rend() {
-    return Iterator(data_.get() - 1);
+  ReverseIterator rend() {
+    return ReverseIterator(data_.get() - 1);
   };
-  ConstIterator crend() {
-    return ConstIterator(data_.get() - 1);
+  ConstReverseIterator crend() const {
+    return ConstReverseIterator(data_.get() - 1);
   };
 
   // Capacity Methods
-  std::size_t size() { return size_; }; 
+  std::size_t size() const { return size_; }; 
 
-  std::size_t capacity() { return capacity_; };
+  std::size_t capacity() const { return capacity_; };
 
-  bool empty() {
+  bool empty() const {
     return this->begin() == this->end();
   };
 
@@ -193,42 +271,54 @@ public:
     size_ = 0;
   };
 
-  Iterator insert(Iterator pos, const ValueType& val) {
+  ReverseIterator insert(Iterator pos, const ValueType& val) {
     size_++;
     if (capacity_ == 0) { capacity_ = 1; }
     if (size_ > capacity_) {
+      int counter {0};
+      while (pos != this->begin()) {
+        pos--;
+        counter++;
+      }
       ReAlloc(capacity_ * 2); 
+      pos = this->begin()+counter;
     }
-    for (auto it {this->rbegin()}; it != this->rend(); it--) {
+    for (auto it {this->rbegin()}; it != this->rend(); it++) {
         if (it != pos) {
-          *it = *(it - 1);
+          *it = *(it + 1);
         } else {
           *it = val;
           return it;
         }
     }
-    return this->end();
+    return this->rend();
   };
 
-  Iterator insert(Iterator pos, ValueType&& val) {
+  ReverseIterator insert(Iterator pos, ValueType&& val) {
     size_++;
     if (capacity_ == 0) { capacity_ = 1; }
     if (size_ > capacity_) {
+      int counter {0};
+      while (pos != this->begin()) {
+        pos--;
+        counter++;
+      }
       ReAlloc(capacity_ * 2); 
+      pos = this->begin()+counter;
     }
-    for (auto it {this->rbegin()}; it != rend(); it++) {
+    for (auto it {this->rbegin()}; it != this->rend(); it++) {
         if (it != pos) {
-          *it = *(it - 1);
+          *it = *(it + 1);
         } else {
           *it = std::move(val);
           return it;
         }
     }
-    return this->end();
+    return this->rend();
   };
 
   template <typename ...Args>
-  Iterator emplace(Iterator pos, Args&& ...args) {
+  ReverseIterator emplace(Iterator pos, Args&& ...args) {
     return insert(pos, ValueType(std::forward<Args>(args)...));
   }
 
@@ -329,16 +419,28 @@ public:
     return *this;
   }
 
-  ValueType &operator[](std::size_t i) {
+  ValueType &operator[](std::size_t i) const {
     return data_[i];
   }
 
-  ValueType &operator[](int i) {
+  ValueType &operator[](int i) const {
     return data_[i];
   }
 
   PointerType operator&(std::size_t i) { 
     return &data_[i];
+  }
+
+  friend std::ostream &operator<<(std::ostream &os, const MyVector<T> mv) {
+    std::string v_string = "[";
+    for (int i {0}; i < mv.size(); i++) {
+      if (i == mv.size()-1) {
+        v_string += std::to_string(mv[i]) + "]";
+      } else {
+        v_string += std::to_string(mv[i]) + ", ";
+      }
+    }
+    return os << v_string;
   }
 
  private:
