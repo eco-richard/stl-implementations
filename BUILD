@@ -1,13 +1,15 @@
 cc_library(
-    name = "myVector-definition",
-    hdrs = ["myVector.h"]
+    name = "MyVector-definition",
+    hdrs = ["MyVector.h"]
 )
 
 cc_test(
-    name = "myVector-test",
-    srcs = ["myVector_test.cc"],
+    name = "MyVector-test",
+    srcs = ["test/MyVector_test.cc"],
+    size = "small",
+    copts = ["-std=c++17 -w"],
     deps = [
         "@com_google_googletest//:gtest_main",
-        ":myVector-definition"
+        ":MyVector-definition"
     ]
 )
