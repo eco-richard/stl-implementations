@@ -1,4 +1,10 @@
-# Projects
+# C++ Implementations
+
+A repository containing my implementations of tools from the C++ STL. 
+
+So far I've recreated:
+- std::vector
+- std::unique_ptr
 
 —————
 
